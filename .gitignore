@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Env / secrets
+.env
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# Model / HF cache (large)
+.cache/
+.huggingface/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# The database. One file holding everything the user has entered - their
+# profile, knowledge base and job history. Never commit it.
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Generated artifacts
+backend/generated/
+*.pdf
+!resources/**/*.pdf
+
+# Machine-local Claude Code settings
+.claude/settings.local.json
+
+# Landing app
+landing/.next/
+landing/node_modules/
+landing/.env.local
+landing/.vercel/
+
+# Installer build output (built by installer/build-exe.ps1 / the release workflow)
+installer/dist/

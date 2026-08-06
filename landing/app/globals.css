@@ -1,0 +1,673 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-code);
+  --font-serif: var(--font-display);
+  --font-heading: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* Tells the browser which way to paint the parts of a control we do not draw
+     ourselves: the popup list a native select opens, scrollbars, autofill.
+     Without it the popup is painted light whatever the page is doing, so in
+     dark mode the country list was white text on a white panel. */
+  color-scheme: light;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.35 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.75 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+    /* The page was set too small to read comfortably at arm's length. */
+    font-size: 17px;
+    scroll-behavior: smooth;
+  }
+  /* Lenis animates the scroll offset itself, so the browser doing the same
+     thing at the same time is two easings fighting over one number. The class
+     is added only while Lenis is actually running, which means anyone it skips,
+     including everyone who asked for reduced motion, keeps the native smooth
+     scroll they had before. */
+  html.lenis-on {
+    scroll-behavior: auto;
+  }
+}
+
+/* The rules Lenis ships in its own stylesheet, written out rather than imported
+   so the whole page stays one file to read.
+
+   Deliberately outside @layer base. The height rule has to beat Tailwind's
+   h-full on <html>, and a layered rule loses to any utility no matter how
+   specific it is, so inside the layer this silently did nothing. Unlayered CSS
+   outranks every layer, which is the only reason this works.
+
+   The height itself is load bearing: with <html> pinned to 100%, Lenis measures
+   a page exactly one viewport tall and will not scroll past the first screen. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+/* ---------------------------------------------------------------------------
+   The wordmark: un̶employed
+   The strike is a drawn line rather than a text-decoration so it can sweep in,
+   and so its weight scales with the mark instead of with the font's whim.
+   --------------------------------------------------------------------------- */
+.logo__struck {
+  animation: logo-dim 0.5s ease-out 0.55s both;
+}
+
+.logo__strike {
+  position: absolute;
+  left: -0.06em;
+  right: -0.06em;
+  top: 50%;
+  height: 0.09em;
+  min-height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: logo-strike 0.45s cubic-bezier(0.65, 0, 0.35, 1) 0.35s both;
+}
+
+.logo__caret {
+  animation: logo-blink 1.15s step-end 1.1s infinite;
+}
+
+/* Replaying on hover costs one class: restart the animation from the top. */
+.logo:hover .logo__strike {
+  animation: logo-strike 0.45s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+/* The hero mark earns a slower, more deliberate entrance than the nav one. */
+.logo--hero .logo__strike {
+  animation-duration: 0.7s;
+  animation-delay: 0.5s;
+}
+.logo--hero .logo__struck {
+  animation-delay: 0.9s;
+}
+
+@keyframes logo-strike {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes logo-dim {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.45;
+  }
+}
+
+@keyframes logo-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Motion is the joke, not the information. Without it, land on the end state. */
+@media (prefers-reduced-motion: reduce) {
+  .logo__strike,
+  .logo__struck,
+  .logo__caret,
+  .logo:hover .logo__strike {
+    animation: none;
+  }
+  .logo__strike {
+    transform: scaleX(1);
+  }
+  .logo__struck {
+    opacity: 0.45;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Landing page motion and layout
+   Two rules for everything below: it degrades to a readable static page with
+   JavaScript off, and it stops entirely under prefers-reduced-motion.
+   --------------------------------------------------------------------------- */
+
+/* The reveal used to be an IntersectionObserver toggling data-armed and
+   data-shown against the rules that stood here. components/reveal.tsx does it
+   with framer-motion now, and these selectors matched nothing, including the
+   reduced-motion override that was supposed to switch them off. The override
+   lives in components/motion-provider.tsx instead, where framer can see it. */
+
+/* The crowd behind the headline. One continuous grid you drag sideways, rather
+   than a screenful of faces scattered by hash: a scatter reads as a crowd at
+   twenty seven people and as a mess at a thousand, and it can only ever show
+   the handful that fit. */
+.hero-board {
+  position: absolute;
+  inset: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Dragging to the end of the crowd must not trigger the browser's back
+     gesture, which would leave the page mid drag. */
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+  /* The centre is masked rather than kept clear by placement. That is what lets
+     this be one surface that scrolls as a whole instead of two gutters that
+     would have to scroll in opposite directions to stay symmetric. Faces pass
+     behind the copy and out the other side as you drag. */
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent,
+      black 7%,
+      black 22%,
+      transparent 31%,
+      transparent 69%,
+      black 78%,
+      black 93%,
+      transparent
+    ),
+    linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  mask-composite: intersect;
+}
+
+.hero-board::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-board[data-panning="true"] {
+  cursor: grabbing;
+}
+
+.hero-board__grid {
+  --rows: 6;
+  --face: 64px;
+  display: grid;
+  /* Column by column, so a face and the one after it are neighbours vertically
+     and the crowd grows to the right as more of it loads. */
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--rows), var(--face));
+  grid-auto-columns: var(--face);
+  align-content: center;
+  gap: 1.5rem 1.25rem;
+  height: 100%;
+  width: max-content;
+  /* The first face is you when you are signed in, so it has to start inside the
+     visible left band rather than under the fade at the very edge. */
+  padding-inline: 11vw 8vw;
+}
+
+/* Narrower than this and there are no gutters to put anyone in: the copy column
+   is 42rem, so anything under about 64rem has faces sitting on the headline.
+   The crowd becomes two full width rows instead, one above the copy and one
+   below it, panning exactly the same way. The bands are pixel sized rather than
+   percentages so they hold their ground on a short phone as well as a tall one. */
+@media (max-width: 1023px) {
+  .hero-board {
+    mask-image:
+      linear-gradient(
+        to bottom,
+        black 0 8.25rem,
+        transparent 8.25rem,
+        transparent calc(100% - 7.75rem),
+        black calc(100% - 7.75rem)
+      ),
+      linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  }
+
+  .hero-board__grid {
+    --rows: 2;
+    --face: 48px;
+    /* The rows are pushed to the two bands, which is where the mask lets them
+       through. The padding keeps the top row clear of the fixed nav and the
+       bottom row clear of the scroll hint. */
+    align-content: space-between;
+    gap: 0 0.85rem;
+    padding: 4.5rem 12vw 3.5rem;
+  }
+}
+
+/* Once the crowd loops, the run is preceded by a repeat of its own end, so the
+   inset that held the opening face clear of the fade has to go. An empty gap
+   there would be the one stretch of the surface that did not repeat, and it
+   would flicker into and out of faces every time the loop came round. Declared
+   after the narrow screen rules so it wins on both. */
+.hero-board__grid--looping {
+  padding-left: 0;
+}
+
+.hero-board__face {
+  position: relative;
+  width: var(--face);
+  height: var(--face);
+  opacity: 0;
+  animation: face-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hero-board__face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  /* Present enough to read as a crowd, quiet enough that the headline still
+     wins. Hover takes whichever one you point at to full. */
+  opacity: 0.6;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Safari draws its own disclosure triangle and ignores list-style, so the FAQ
+   summaries need this as well as the utility class to show only our own mark. */
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The faces are line drawings in near black ink with a transparent ground, so
+   on a dark page they would be black on black. They keep their light disc and
+   sit a little quieter instead, since a grid of white circles glares in a way
+   the same grid of grey ones does not. */
+.dark .hero-board__face img {
+  background: oklch(0.985 0 0);
+  opacity: 0.42;
+}
+
+.hero-board__face:hover {
+  z-index: 20;
+}
+
+.hero-board__face:hover img {
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+/* You, in the crowd. Full strength and labelled, because finding yourself in it
+   is the whole reward for joining. */
+.hero-board__face[data-me] img {
+  opacity: 1;
+  border-color: var(--foreground);
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 3px var(--foreground);
+}
+
+.hero-board__you {
+  position: absolute;
+  top: -0.5rem;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0.05rem 0.4rem;
+  border-radius: 9999px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  z-index: 6;
+}
+
+.hero-board__name {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  z-index: 5;
+}
+
+.hero-board__place {
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+}
+
+.hero-board__face:hover .hero-board__name {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   The wall itself, at /wall.
+   A window onto a surface bigger than the window, in both directions. A single
+   column of a thousand faces is a scrollbar you give up on; a roughly square
+   wall you move around is a wall.
+   --------------------------------------------------------------------------- */
+.wall-canvas {
+  height: clamp(420px, 72svh, 760px);
+  overflow: auto;
+  /* Reaching the bottom of the wall should not carry on and scroll the page. */
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  cursor: grab;
+  user-select: none;
+  scrollbar-width: thin;
+}
+
+.wall-canvas[data-panning="true"] {
+  cursor: grabbing;
+}
+
+.wall-canvas:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+.wall-grid {
+  --tile: 104px;
+  display: grid;
+  /* Column count comes from the total, not from how many rows have loaded, so
+     later pages extend the wall downward instead of moving every face already
+     under your cursor. */
+  grid-template-columns: repeat(var(--cols), var(--tile));
+  gap: 0.5rem;
+  padding: 1.25rem;
+  width: max-content;
+}
+
+@media (max-width: 640px) {
+  .wall-grid {
+    --tile: 86px;
+    gap: 0.25rem;
+    padding: 0.75rem;
+  }
+}
+
+.wall-tile {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--radius-lg);
+  padding: 0.5rem;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.wall-tile:hover {
+  background: color-mix(in oklab, var(--muted) 60%, transparent);
+}
+
+.wall-tile__face {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+/* You, pinned to the front of the wall. First tile, marked, so the wall opens
+   on you rather than making you hunt for yourself. */
+.wall-tile[data-me] {
+  background: color-mix(in oklab, var(--muted) 70%, transparent);
+  box-shadow: inset 0 0 0 1px var(--foreground);
+}
+
+.wall-tile__you {
+  position: absolute;
+  bottom: -0.35rem;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0.05rem 0.4rem;
+  border-radius: 9999px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+@keyframes face-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A quiet nudge that there is more page below. */
+.scroll-hint {
+  animation: scroll-hint 2.4s ease-in-out infinite;
+}
+
+@keyframes scroll-hint {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(5px); opacity: 1; }
+}
+
+/* Shared surfaces. Defined once here rather than repeated as long class
+   strings, because every card and button on the page is the same object. */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  background: var(--background);
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover {
+  border-color: color-mix(in oklab, var(--foreground) 32%, transparent);
+}
+
+.input {
+  display: block;
+  width: 100%;
+  height: 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* A select needs a real background, unlike the text inputs that share this
+   class. The list it opens is painted by the browser from the element's own
+   computed background, and a transparent one resolves to white, which in dark
+   mode meant white options on a white panel. The options are named separately
+   because they are painted as their own elements, not as part of the select. */
+select.input,
+select.input option {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+textarea.input {
+  height: auto;
+  padding-block: 0.5rem;
+}
+
+.input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+.btn-solid,
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--foreground);
+  padding: 0.7rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.btn-solid {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.btn-solid:hover {
+  opacity: 0.85;
+}
+
+.btn-outline {
+  border-color: var(--border);
+}
+
+.btn-outline:hover {
+  background: var(--muted);
+}
+
+.btn-solid:focus-visible,
+.btn-outline:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-board__face {
+    opacity: 1;
+    animation: none;
+  }
+  .hero-board__face img,
+  .hero-board__name {
+    transition: none;
+  }
+  .scroll-hint {
+    animation: none;
+  }
+}

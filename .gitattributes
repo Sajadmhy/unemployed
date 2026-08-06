@@ -1,0 +1,11 @@
+# Shell scripts must keep LF endings even when committed from Windows. Checked
+# out with CRLF, run.sh fails on macOS and Linux with
+# "bad interpreter: /usr/bin/env bash^M" — which reads like a broken project
+# rather than a line-ending setting.
+*.sh text eol=lf
+
+# The reverse for PowerShell, which is only ever run on Windows.
+*.ps1 text eol=crlf
+
+# Let git decide for everything else.
+* text=auto

@@ -1,0 +1,21 @@
+Ananya Sharma
+B.Tech Computer Science, VIT Vellore (2022-2026) | ananya.sharma@example.com | github.com/ananya
+
+PROJECTS
+- SmartMess: Built a mess-menu and feedback web app used by 1,200+ students. Backend in FastAPI with PostgreSQL; reduced daily food wastage reports time by 60%. Tech: Python, FastAPI, PostgreSQL, React.
+- TrafficEye: Trained a YOLOv8 model to detect traffic violations from CCTV frames, achieving 88% mAP on a 5,000-image dataset. Tech: Python, PyTorch, OpenCV.
+
+EXPERIENCE
+- Backend Intern, Zomato (Summer 2024): Developed REST APIs for the restaurant onboarding service handling 10k requests/day. Wrote integration tests raising coverage from 40% to 75%.
+
+LEADERSHIP
+- Technical Lead, VIT Coding Club (2023-2024): Led a team of 6 to organize a 300-participant hackathon.
+
+SKILLS
+Languages: Python, Java, SQL, JavaScript
+Frameworks: FastAPI, React, Node.js
+Tools: Docker, Git, PostgreSQL
+
+ACHIEVEMENTS
+- Winner, Smart India Hackathon 2024 (national level).
+- Solved 500+ problems on LeetCode.

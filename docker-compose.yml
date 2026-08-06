@@ -1,0 +1,106 @@
+# Optional. The app itself needs no Docker at all — the database is a SQLite
+# file and Ollama installs natively, so `run.ps1` / `run.sh` is the normal way
+# to start everything. This file exists for one case: running the whole stack
+# in containers, with no Python, Node or Ollama on the host.
+#
+#   docker compose --profile app up -d
+#
+# There is no default (profile-less) service any more. `docker compose up -d`
+# on its own now starts nothing, which is correct — development needs no
+# container.
+#
+services:
+  ollama:
+    profiles: ["app"]
+    # Local LLM runtime for the containerised path. Development uses a native
+    # Ollama install on the host instead.
+    image: ollama/ollama:latest
+    container_name: jobsearch-ollama
+    restart: unless-stopped
+    ports:
+      # Host port 11435 on purpose: a native Windows/macOS Ollama install owns
+      # 11434 and auto-starts, which would silently shadow this container.
+      - "11435:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+
+  init:
+    profiles: ["app"]
+    # Pulls the Ollama model with progress and exits. Nothing blocks on it —
+    # api/web start immediately and the model finishes downloading in parallel.
+    build: ./backend/init
+    container_name: jobsearch-init
+    restart: "no"
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+
+  api:
+    profiles: ["app"]
+    build: ./backend
+    container_name: jobsearch-api
+    restart: unless-stopped
+    environment:
+      # The SQLite file lives on the `appdata` volume so it survives the
+      # container. Inside the compose network ollama listens on its own 11434,
+      # not the 11435 host mapping.
+      DATABASE_URL: sqlite+pysqlite:////data/jobsearch.db
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    ports:
+      - "8000:8000"
+    volumes:
+      - appdata:/data
+      - generated:/app/generated
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  worker:
+    profiles: ["app"]
+    build: ./backend
+    container_name: jobsearch-worker
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      DATABASE_URL: sqlite+pysqlite:////data/jobsearch.db
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    volumes:
+      # The same database file as the api, which is why WAL and a busy timeout
+      # are set on every connection (see app/db/session.py) — two processes
+      # write to it.
+      - appdata:/data
+    # Ingest + score once a day. The API applies migrations, so the worker waits.
+    command: python -m app.worker.scheduler --daily
+
+  web:
+    profiles: ["app"]
+    build: ./web
+    container_name: jobsearch-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+
+volumes:
+  # Named explicitly, matching the fixed container_names above: compose
+  # otherwise prefixes volume names with the *directory* name, so two clones of
+  # this repo in differently-named folders would share a container name while
+  # getting two different, disconnected volumes. Recreating a container from
+  # the "wrong" folder then silently attaches an empty database under a name
+  # that looks identical to the one holding real data — which happened once.
+  # Pinning the name makes the volume as global as the container.
+  appdata:
+    name: jobsearch_appdata
+  ollamadata:
+    name: jobsearch_ollamadata
+  generated:
+    name: jobsearch_generated

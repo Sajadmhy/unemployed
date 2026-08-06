@@ -1,0 +1,83 @@
+# The stack an end user's machine actually runs, shipped alongside the
+# Windows installer. Same services as docker-compose.yml, but every app image
+# is pulled from GHCR (see .github/workflows/publish-images.yml) instead of
+# built locally, and there's no dev/infra split: an end user always wants the
+# full stack running.
+#
+#   docker compose -f docker-compose.release.yml pull
+#   docker compose -f docker-compose.release.yml up -d
+#
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jobsearch-ollama
+    restart: unless-stopped
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+
+  init:
+    # Pulls the model with progress and exits. Nothing else waits on it.
+    image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-init:${IMAGE_TAG:-latest}
+    container_name: jobsearch-init
+    restart: "no"
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+
+  api:
+    image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-api:${IMAGE_TAG:-latest}
+    container_name: jobsearch-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: sqlite+pysqlite:////data/jobsearch.db
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    ports:
+      - "8000:8000"
+    volumes:
+      - appdata:/data
+      - generated:/app/generated
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  worker:
+    image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-api:${IMAGE_TAG:-latest}
+    container_name: jobsearch-worker
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      DATABASE_URL: sqlite+pysqlite:////data/jobsearch.db
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    volumes:
+      - appdata:/data
+    command: python -m app.worker.scheduler --daily
+
+  web:
+    image: ${IMAGE_REGISTRY:-ghcr.io/maan-teckwani}/unemployed-web:${IMAGE_TAG:-latest}
+    container_name: jobsearch-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+
+volumes:
+  # Named explicitly - see docker-compose.yml for why. The installer always
+  # unpacks to a fixed %LOCALAPPDATA%\JobSearchAI, so this isn't live today,
+  # but pinning it costs nothing and closes the same hole permanently.
+  appdata:
+    name: jobsearch_appdata
+  ollamadata:
+    name: jobsearch_ollamadata
+  generated:
+    name: jobsearch_generated

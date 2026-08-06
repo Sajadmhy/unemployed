@@ -1,0 +1,42 @@
+# Minimum bounds rather than exact pins, deliberately.
+#
+# Exact pins meant the repo dictated an interpreter: pydantic-core, psycopg and
+# SQLAlchemy stopped shipping wheels at cp313 for the versions pinned here, so
+# anyone on a newer Python had pip fall back to building them from source and
+# needed a Rust toolchain and a C compiler to install a job-search app. With
+# floors, pip resolves whatever has wheels for the Python you already have.
+
+# Web framework
+fastapi>=0.115.6
+uvicorn[standard]>=0.34.0
+python-multipart>=0.0.20
+
+# Settings / validation
+pydantic>=2.10.4
+pydantic-settings>=2.7.1
+
+# Database. SQLite needs no driver - it is in the standard library - so this is
+# just the ORM and migrations.
+SQLAlchemy>=2.0.36,<3
+alembic>=1.14.0
+
+# Only used by `python -m app.db.migrate_from_postgres`, the one-time import for
+# people who ran the Postgres version of this app. Nothing else touches it, and
+# a fresh install never runs it.
+psycopg[binary]>=3.2.3,<4
+
+# Embeddings (bge-small-en-v1.5). Pulls torch — this is the heavy install.
+sentence-transformers>=3.3.1
+
+# HTTP client (Ollama)
+httpx>=0.28.1
+
+# Document text extraction for KB onboarding (resume/docs -> text)
+pdfplumber>=0.11.4
+python-docx>=1.1.2
+
+# ATS-safe PDF generation (pure Python — no GTK/browser system deps)
+fpdf2>=2.8.2
+
+# Tests
+pytest>=8.3.4
