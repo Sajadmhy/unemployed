@@ -68,10 +68,18 @@ def tailor(data: TailorIn, db: Session = Depends(get_db)) -> FileResponse:
         title = title or guess["title"]
         company = company or guess["company"]
 
-    job = create_manual_job(
-        ManualJobIn(title=title, company=company, description=text, apply_url=url), db
-    )
-    resume = generate_resume(job["job_id"], "pdf", db)
+    step = "reading the job"
+    try:
+        job = create_manual_job(
+            ManualJobIn(title=title, company=company, description=text, apply_url=url), db
+        )
+        step = "writing the resume"
+        resume = generate_resume(job["job_id"], "pdf", db)
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001 - a bot can only show what we tell it
+        log.exception("tailor failed while %s", step)
+        raise HTTPException(500, f"Failed while {step}: {type(e).__name__}: {e}"[:600]) from e
     row = db.get(Resume, resume["id"])
     if row is None or not row.pdf_path:
         raise HTTPException(500, "Resume was generated but the PDF is missing.")
