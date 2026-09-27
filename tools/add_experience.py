@@ -21,7 +21,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-OVERLAP = 0.45  # share of the shorter item's words that must also be in the other
+OVERLAP = 0.35  # share of the shorter item's words that must also be in the other
 _STOP = set("a an and the of for in on to with across from by as at into via using plus its their "
             "including more than".split())
 
