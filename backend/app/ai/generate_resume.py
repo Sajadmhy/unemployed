@@ -40,8 +40,9 @@ You are given the candidate's complete record. Your job is selection and phrasin
 
 SELECTION
 - Read every numbered accomplishment before choosing. The best evidence for this job is often not the first one listed.
-- Choose the ones this job actually asks for, strongest first. Fewer, sharper bullets beat a complete list.
-- Skip anything irrelevant to this job, however impressive.
+- Include every accomplishment that is relevant to this job, strongest first. Leave out only what is clearly irrelevant.
+- Give the most recent role the most bullets (typically 3-6); older or shorter roles 1-3 each.
+- Aim for 8-14 bullets in total when the record supports it. Never write two bullets from the same accomplishment.
 
 PHRASING
 - Start with a strong past-tense verb. One sentence, max 30 words.
@@ -53,6 +54,7 @@ TRUTH
 - Every bullet MUST include "source_id": the number of the accomplishment it came from.
 - Never introduce a number, percentage or metric that is not already in that accomplishment.
 - Never claim a skill the job wants but the accomplishments do not show.
+- Never add scale or outcome words ("thousands of users", "significantly", "improved performance") that the accomplishment does not state.
 
 Respond with JSON in exactly this shape:
 {"bullets":[{"source_id":1,"text":"Built X using Y, serving Z users"},{"source_id":3,"text":"..."}]}"""
@@ -107,7 +109,7 @@ def select_skills(requirements: dict, chunks: list[KBChunk], limit: int = 18) ->
         requirements.get("preferred_skills", [])
     ):
         name = str(skill).strip()
-        if name and _evidenced(name, evidence) and name.lower() not in {s.lower() for s in selected}:
+        if name and _evidenced(name, evidence) and _skill_key(name) not in {_skill_key(s) for s in selected}:
             selected.append(name)
 
     # Top up with the candidate's own strongest technologies so the section is
@@ -117,9 +119,14 @@ def select_skills(requirements: dict, chunks: list[KBChunk], limit: int = 18) ->
             name = str(tech).strip()
             if len(selected) >= limit:
                 break
-            if name and name.lower() not in {s.lower() for s in selected}:
+            if name and _skill_key(name) not in {_skill_key(s) for s in selected}:
                 selected.append(name)
     return selected[:limit]
+
+
+def _skill_key(name: str) -> str:
+    """"React" and "React.js", "Node" and "Node.js": one skill, printed once."""
+    return re.sub(r"[^a-z0-9+#]", "", re.sub(r"\.?js$", "", name.strip().lower()))
 
 
 def _evidenced(name: str, evidence: str) -> bool:

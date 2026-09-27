@@ -105,19 +105,39 @@ def _iter_block_text(parent: DocxDocument):
                     yield " | ".join(unique)
 
 
-_SYSTEM = """You extract a candidate's career into structured accomplishment chunks for a resume knowledge base.
+_SYSTEM = """You turn a resume or career document into accomplishment chunks for a resume knowledge base.
 
-Rules:
-- Use ONLY information present in the document. Never invent facts, metrics, employers, dates, or technologies.
-- Create ONE chunk per distinct accomplishment or responsibility (split multi-part bullets).
-- Choose `type` from: project, experience, leadership, achievement, skill, certification, education.
-- Use `education` for degrees, schools and coursework, one chunk per qualification. Put the degree in `title`, the institution in `company` and the years in `date_range`.
-- Fill `technologies` and `skills` only with items actually mentioned; otherwise use [].
-- Fill `impact` only if a concrete outcome/metric is stated; otherwise null.
-- Keep `accomplishment` concise, truthful, and results-oriented.
+WHAT A CHUNK IS
+- One chunk = one accomplishment or responsibility. Split a bullet that describes two separate things.
+- Cover EVERY bullet and sentence of every role, project and qualification. Do not summarise or skip any.
+- All chunks from the same job share the same type, title, company and date_range.
+
+TYPE (decides which resume section the chunk prints under)
+- experience: anything done in a job, internship, apprenticeship or contract, INCLUDING features, products, tools or internal projects built at that job.
+- project: ONLY personal, side, open-source or academic projects that were not part of a job listed in the document.
+- education: a degree, school or coursework (one chunk per qualification).
+- certification, achievement (awards, publications), leadership (volunteering, mentoring, activities).
+- skill: one chunk per line of a skills list, e.g. "Frontend: React, Next.js", with the items in technologies.
+
+FIELDS
+- title: experience -> the ROLE exactly as written ("Full-Stack Developer"), never a feature name and never the company. project -> the project name. education -> the degree.
+- company: the employer, client or institution as written; null for personal projects.
+- date_range: exactly as written ("Feb 2023 - Present"); null if absent.
+- context: optional short label for what the accomplishment is about ("Chrome extension", "CV generation"); else null.
+- accomplishment: one sentence, keeping the document's own details, names, technologies and numbers.
+- technologies: tools, languages, frameworks and services named for this accomplishment or its role line; else [].
+- skills: other concrete skills it names (e.g. "API design"); never soft skills; else [].
+- impact: a stated outcome or metric, copied as written; else null.
+
+TRUTH
+- Use ONLY what the document says. Never invent or embellish facts, metrics, scale ("thousands of users"), employers, dates or technologies.
+- Ignore the contact block (name, email, links).
 
 Respond with JSON in exactly this shape (the values are only an example):
-{"chunks": [{"type": "experience", "title": "Backend Developer", "context": null, "company": "Acme", "date_range": "2021 - 2023", "accomplishment": "Built the billing API used by 40 clients", "technologies": ["Python", "PostgreSQL"], "skills": ["API design"], "impact": "40 clients"}]}"""
+{"chunks": [
+ {"type": "experience", "title": "Backend Developer", "context": "Billing", "company": "Acme", "date_range": "Jan 2021 - Present", "accomplishment": "Built the billing API with Node.js and PostgreSQL", "technologies": ["Node.js", "PostgreSQL"], "skills": ["API design"], "impact": null},
+ {"type": "experience", "title": "Backend Developer", "context": "Search", "company": "Acme", "date_range": "Jan 2021 - Present", "accomplishment": "Added Elasticsearch-backed candidate search", "technologies": ["Elasticsearch"], "skills": [], "impact": null}
+]}"""
 
 
 # The headings a resume actually uses, and what each one means in our own
@@ -277,6 +297,51 @@ def parse_to_chunks(
         chunks.extend(found)
         if on_segment:
             on_segment()
+    return _consolidate(chunks)
+
+
+# Words that make a title a role rather than a feature or a product name.
+_ROLE_WORDS = re.compile(
+    r"\b(developer|engineer|programmer|designer|architect|lead|manager|intern|apprentice|"
+    r"consultant|analyst|scientist|specialist|administrator|officer|director|head|founder|"
+    r"freelancer?|contractor|assistant|associate|researcher|teacher|tutor|devops|sre)\b",
+    re.IGNORECASE,
+)
+
+
+def _consolidate(chunks: list[dict]) -> list[dict]:
+    """Keep each job in one piece, whatever the model filed its bullets as.
+
+    Models like to turn the features built at a job into "projects" titled after
+    the feature ("Recruiter Workflows", "Chrome Extension"), which moved a
+    current job out of Experience entirely and printed it as five unrelated
+    projects. A chunk with both an employer and dates is work done in a job, so:
+    it becomes experience, and every chunk of that job takes the job's role title,
+    the feature name moving to `context` where it is still used.
+    """
+    def job_key(c: dict) -> tuple[str, str] | None:
+        if c.get("company") and c.get("date_range"):
+            return (c["company"].strip().lower(), c["date_range"].strip().lower())
+        return None
+
+    jobs: dict[tuple[str, str], list[dict]] = {}
+    for c in chunks:
+        key = job_key(c)
+        if key and c["type"] in ("experience", "project"):
+            jobs.setdefault(key, []).append(c)
+
+    for group in jobs.values():
+        if not any(c["type"] == "experience" for c in group) and len(group) < 2:
+            continue  # a single dated client project: leave it as the model filed it
+        roles = [c["title"] for c in group if _ROLE_WORDS.search(c["title"] or "")]
+        # No role written anywhere: head the job with the employer rather than
+        # printing each feature as a separate job.
+        role = max(set(roles), key=roles.count) if roles else group[0]["company"]
+        for c in group:
+            c["type"] = "experience"
+            if c["title"] != role:
+                c["context"] = c.get("context") or c["title"]
+                c["title"] = role
     return chunks
 
 

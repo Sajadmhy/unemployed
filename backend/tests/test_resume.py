@@ -156,3 +156,14 @@ def test_experience_prints_newest_first_and_employer_once(tmp_path):
     positions = [text.index(c) for c in ("Paiger |", "Classeh", "Lolo Co", "100 Devs")]
     assert positions == sorted(positions)
     assert "Full-Stack Developer Paiger" not in text and "Full-Stack Developer" in text
+
+
+def test_pdf_text_has_no_question_marks_for_unicode_hyphens():
+    assert _pdf._safe("Front‑End, full‐stack, a b, x​y") == "Front-End, full-stack, a b, xy"
+
+
+def test_skills_listed_once_across_js_suffix():
+    from app.ai.generate_resume import _skill_key
+    assert _skill_key("React") == _skill_key("React.js") == _skill_key("ReactJS".replace("JS", ".js"))
+    assert _skill_key("Node.js") == _skill_key("node")
+    assert _skill_key("C#") != _skill_key("C++")

@@ -83,3 +83,24 @@ def test_odd_shapes_still_yield_chunks(monkeypatch, output):
 def test_nothing_usable_is_empty(monkeypatch):
     monkeypatch.setattr(_p, "generate_json", lambda *a, **k: {"note": "no idea"})
     assert _p.parse_to_chunks("some text here") == []
+
+
+def test_features_built_at_a_job_are_experience_under_the_role(monkeypatch):
+    out = {"chunks": [
+        {"type": "project", "title": "Recruiter Workflows", "company": "Paiger",
+         "date_range": "Feb 2023 - Present", "accomplishment": "Built recruiter workflows"},
+        {"type": "project", "title": "Chrome Extension", "company": "Paiger",
+         "date_range": "Feb 2023 - Present", "accomplishment": "Built a Chrome extension"},
+        {"type": "experience", "title": "Full-Stack Developer", "company": "Paiger",
+         "date_range": "Feb 2023 - Present", "accomplishment": "Designed AI CV features"},
+        {"type": "project", "title": "My Blog", "company": None, "date_range": "2021",
+         "accomplishment": "Wrote a blog engine"},
+    ]}
+    monkeypatch.setattr(_p, "generate_json", lambda *a, **k: out)
+    chunks = _p.parse_to_chunks("Experience\nFull-Stack Developer Paiger")
+    paiger = [c for c in chunks if c["company"] == "Paiger"]
+    assert {c["type"] for c in paiger} == {"experience"}
+    assert {c["title"] for c in paiger} == {"Full-Stack Developer"}
+    assert paiger[0]["context"] == "Recruiter Workflows"
+    blog = next(c for c in chunks if c["title"] == "My Blog")
+    assert blog["type"] == "project"

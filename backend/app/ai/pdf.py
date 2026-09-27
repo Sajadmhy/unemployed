@@ -220,4 +220,15 @@ def _safe(text: str) -> str:
     stripped = "".join(
         c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
     )
+    # Hosted models write non-breaking hyphens (U+2011, "front-end") and narrow
+    # spaces that are in no table above; by category, every dash and space the
+    # font lacks becomes its plain form instead of a "?".
+    stripped = "".join(
+        c if ord(c) < 256
+        else "-" if unicodedata.category(c) == "Pd"
+        else " " if unicodedata.category(c) == "Zs"
+        else "" if unicodedata.category(c) == "Cf"
+        else c
+        for c in stripped
+    )
     return stripped.encode("latin-1", "replace").decode("latin-1")
