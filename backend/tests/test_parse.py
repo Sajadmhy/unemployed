@@ -58,3 +58,28 @@ def test_text_with_no_seam_at_all_is_still_cut_to_size() -> None:
     segments = segment("q" * 40_000)
     assert len(segments) == 4
     assert all(len(s) <= _SEGMENT_CHARS for s in segments)
+
+
+# ---- tolerant of small-model output shapes ----------------------------------
+import pytest  # noqa: E402
+
+from app.ai import parse as _p  # noqa: E402
+
+
+@pytest.mark.parametrize("output", [
+    {"chunks": [{"type": "experience", "title": "Dev", "accomplishment": "Built X"}]},
+    [{"type": "experience", "title": "Dev", "accomplishment": "Built X"}],
+    {"experience": [{"title": "Dev", "description": "Built X"}]},
+    {"type": "experience", "title": "Dev", "description": "Built X"},
+    {"chunks": [{"title": "Dev", "accomplishments": ["Built X", "Shipped Y"]}]},
+])
+def test_odd_shapes_still_yield_chunks(monkeypatch, output):
+    monkeypatch.setattr(_p, "generate_json", lambda *a, **k: output)
+    chunks = _p.parse_to_chunks("Experience\nDev at Acme\nBuilt X")
+    assert chunks and chunks[0]["accomplishment"] == "Built X"
+    assert chunks[0]["title"] == "Dev"
+
+
+def test_nothing_usable_is_empty(monkeypatch):
+    monkeypatch.setattr(_p, "generate_json", lambda *a, **k: {"note": "no idea"})
+    assert _p.parse_to_chunks("some text here") == []

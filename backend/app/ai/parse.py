@@ -7,6 +7,8 @@ Two clearly separated steps:
    the user reviews and edits everything before it is saved.
 """
 import io
+import json
+import logging
 import re
 from typing import Callable
 
@@ -18,6 +20,8 @@ from docx.table import Table
 from docx.text.paragraph import Paragraph
 
 from app.ai.llm import generate_json
+
+log = logging.getLogger(__name__)
 
 # How much document text goes into one model call. A long CV is split across
 # several calls rather than truncated: cutting at 12k characters silently threw
@@ -112,7 +116,8 @@ Rules:
 - Fill `impact` only if a concrete outcome/metric is stated; otherwise null.
 - Keep `accomplishment` concise, truthful, and results-oriented.
 
-Respond as JSON: {"chunks": [{"type","title","context","company","date_range","accomplishment","technologies":[],"skills":[],"impact"}]}"""
+Respond with JSON in exactly this shape (the values are only an example):
+{"chunks": [{"type": "experience", "title": "Backend Developer", "context": null, "company": "Acme", "date_range": "2021 - 2023", "accomplishment": "Built the billing API used by 40 clients", "technologies": ["Python", "PostgreSQL"], "skills": ["API design"], "impact": "40 clients"}]}"""
 
 
 # The headings a resume actually uses, and what each one means in our own
@@ -265,15 +270,45 @@ def parse_to_chunks(
         result = generate_json(
             _SYSTEM, f"Document:{hint}{carried}\n\n{piece}", timeout=None, max_tokens=4000
         )
-        raw = result.get("chunks", []) if isinstance(result, dict) else []
-        chunks.extend(
-            _normalize(c, section)
-            for c in raw
-            if isinstance(c, dict) and c.get("accomplishment")
-        )
+        raw = _chunk_list(result)
+        found = [_normalize(c, section) for c in raw if c.get("accomplishment")]
+        if not found:
+            log.warning("parse: no chunks in model output: %s", json.dumps(result)[:1500])
+        chunks.extend(found)
         if on_segment:
             on_segment()
     return chunks
+
+
+# Small models get the shape almost right: a bare list, a different top-level
+# key, one chunk on its own, "description" where "accomplishment" was asked for,
+# or several accomplishments packed into a list. Each of those still carries the
+# candidate's real experience, so it is read rather than thrown away.
+_TEXT_KEYS = ("accomplishment", "accomplishments", "description", "details",
+              "responsibility", "responsibilities", "bullets", "achievement", "summary")
+
+
+def _chunk_list(result) -> list[dict]:
+    if isinstance(result, list):
+        items = result
+    elif isinstance(result, dict):
+        items = result.get("chunks")
+        if not isinstance(items, list):
+            items = next((v for v in result.values()
+                          if isinstance(v, list) and v and isinstance(v[0], dict)), None)
+        if items is None:
+            items = [result] if any(k in result for k in _TEXT_KEYS) else []
+    else:
+        return []
+    out: list[dict] = []
+    for c in items:
+        if not isinstance(c, dict):
+            continue
+        text = next((c[k] for k in _TEXT_KEYS if c.get(k)), None)
+        for line in (text if isinstance(text, list) else [text]):
+            if isinstance(line, str) and line.strip():
+                out.append({**c, "accomplishment": line.strip()})
+    return out
 
 
 _VALID_TYPES = {
