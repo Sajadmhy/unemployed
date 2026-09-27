@@ -104,6 +104,8 @@ def _chat(
         {"role": "system", "content": system},
         {"role": "user", "content": prompt},
     ]
+    if timeout is not None:
+        timeout *= settings.llm_timeout_scale
     return (
         _hosted_chat(messages, timeout, max_tokens, as_json)
         if hosted()

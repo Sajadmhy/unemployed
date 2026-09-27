@@ -326,3 +326,31 @@ See [TEST_FLOW.md](TEST_FLOW.md) for a manual walkthrough of every feature.
 - API docs (Swagger): http://localhost:8000/docs
 - DB shell: `sqlite3 data/jobsearch.db` — or open that file in any SQLite viewer
 - Back it up: copy `data/jobsearch.db` somewhere. That one file is everything.
+
+---
+
+## Headless use: one request, one PDF
+
+For scripts and bots (this fork runs it on a Raspberry Pi next to a Telegram bot),
+there is no need for the web UI.
+
+**Once**, set your profile and load your experience from an existing resume:
+
+```bash
+python3 tools/import_resume.py --resume ~/cv.pdf --name "Your Name" --email you@example.com \
+    --link github=https://github.com/you
+```
+
+**Then, per job**, send the posting (text, or a link to it) and get the tailored PDF back:
+
+```bash
+curl -X POST http://localhost:8000/tailor -H 'Content-Type: application/json' \
+     -d '{"text": "<the job post>"}' -o resume.pdf --max-time 1200
+# or: -d '{"url": "https://boards.greenhouse.io/acme/jobs/123"}'
+```
+
+It adds the job, extracts its requirements, and writes the resume: two local-model
+calls, a few minutes on a small machine. Title and company are read from the post
+when you do not pass them. LinkedIn and other login- or JavaScript-only pages cannot
+be fetched; paste their text instead. On slow hardware set `LLM_TIMEOUT_SCALE=3`
+in `.env` so the model's timeouts stretch to match.

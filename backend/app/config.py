@@ -82,6 +82,11 @@ class Settings(BaseSettings):
     # document. Regenerating is one LLM call and reflects the current KB.
     resume_ttl_minutes: int = 10
 
+    # Multiplies every LLM call's timeout. The built-in timeouts are sized for a
+    # laptop CPU; a Raspberry Pi is two to three times slower, so set this to 3
+    # there rather than editing each call site.
+    llm_timeout_scale: float = 1.0
+
 
 # Single shared settings instance.
 settings = Settings()

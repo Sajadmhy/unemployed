@@ -24,6 +24,7 @@ from app.api import (
     resumes,
     roadmap,
     setup,
+    tailor,
     templates,
 )
 from app.db.retention import start_sweeper
@@ -71,6 +72,7 @@ app.include_router(setup.router)
 app.include_router(templates.router)
 app.include_router(profile.router)
 app.include_router(roadmap.router)
+app.include_router(tailor.router)
 
 @app.get("/health")
 def health(db: Session = Depends(get_db)) -> dict:
