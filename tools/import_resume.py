@@ -52,6 +52,19 @@ def main():
     ap.add_argument("--yes", action="store_true", help="save without asking")
     a = ap.parse_args()
 
+    # The backend takes a while to start (it loads PyTorch), so a run straight
+    # after a restart waits for it instead of failing with "connection refused".
+    for attempt in range(60):
+        try:
+            call(a.api, "GET", "/health", timeout=5)
+            break
+        except OSError:
+            if attempt == 0:
+                print(f"Waiting for the backend at {a.api} ...", flush=True)
+            time.sleep(3)
+    else:
+        sys.exit(f"The backend at {a.api} isn't answering. Check: journalctl -u unemployed-api -n 50")
+
     if a.name or a.email:
         current = call(a.api, "GET", "/profile")
         profile = {k: current.get(k) for k in
