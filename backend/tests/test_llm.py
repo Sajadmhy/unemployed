@@ -182,3 +182,26 @@ def test_generate_json_survives_truncation(monkeypatch):
     from app.ai import llm
     monkeypatch.setattr(llm, "_chat", lambda *a, **k: '{"bullets":[{"source_id":1,"text":"A"},{"sou')
     assert llm.generate_json("s", "p") == {"bullets": [{"source_id": 1, "text": "A"}]}
+
+
+def test_hosted_reasoning_model_gets_effort_and_room(monkeypatch):
+    from app.ai import llm
+    from app.config import settings
+    sent = {}
+
+    class R:
+        status_code = 200
+        def json(self):
+            return {"choices": [{"message": {"content": '{"ok": true}'}}]}
+
+    def fake_post(url, json, headers, timeout):
+        sent.update(json)
+        return R()
+
+    monkeypatch.setattr(settings, "llm_base_url", "https://api.groq.com/openai/v1")
+    monkeypatch.setattr(settings, "llm_api_key", "k")
+    monkeypatch.setattr(settings, "llm_model", "openai/gpt-oss-120b")
+    monkeypatch.setattr(settings, "llm_reasoning_effort", "low")
+    monkeypatch.setattr(llm.httpx, "post", fake_post)
+    assert llm.generate_json("s", "p", max_tokens=1000) == {"ok": True}
+    assert sent["reasoning_effort"] == "low" and sent["max_tokens"] == 3000

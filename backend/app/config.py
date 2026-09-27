@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_api_key: str = ""
     llm_model: str = ""
+    # For hosted reasoning models (Groq's openai/gpt-oss-*): "low" keeps the
+    # hidden thinking short so it doesn't eat the max_tokens meant for the answer.
+    # Empty sends nothing, which is right for models that don't reason.
+    llm_reasoning_effort: str = ""
 
     # ONE embedding model for everything that gets compared (KB + jobs).
     # EMBEDDING_DIM must match the model's output size.

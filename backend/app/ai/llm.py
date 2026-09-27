@@ -241,11 +241,16 @@ def _hosted_chat(
     }
     if as_json:
         payload["response_format"] = {"type": "json_object"}
+    if settings.llm_reasoning_effort:
+        payload["reasoning_effort"] = settings.llm_reasoning_effort
+        # Reasoning counts against max_tokens; leave the answer its full budget.
+        payload["max_tokens"] = max_tokens + 2000
     resp = httpx.post(
         f"{settings.llm_base_url.rstrip('/')}/chat/completions",
         json=payload,
         headers={"Authorization": f"Bearer {settings.llm_api_key}"},
         timeout=timeout if timeout is not None else 300.0,
     )
-    resp.raise_for_status()
+    if resp.status_code >= 400:
+        raise RuntimeError(f"Hosted model error {resp.status_code}: {resp.text[:400]}")
     return resp.json()["choices"][0]["message"]["content"]

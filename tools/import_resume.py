@@ -50,6 +50,8 @@ def main():
     ap.add_argument("--summary", default=""); ap.add_argument("--education", default="")
     ap.add_argument("--link", action="append", default=[], help="label=url, repeatable")
     ap.add_argument("--yes", action="store_true", help="save without asking")
+    ap.add_argument("--replace", action="store_true",
+                    help="delete everything already in the knowledge base before saving")
     a = ap.parse_args()
 
     # The backend takes a while to start (it loads PyTorch), so a run straight
@@ -102,6 +104,11 @@ def main():
                     " If it is a scanned/image PDF there is no text to read; try a .docx or .txt."))
     if not a.yes and input(f"\nSave these {len(chunks)} items to the knowledge base? [y/N] ").lower() != "y":
         sys.exit("Not saved.")
+    if a.replace:
+        old = call(a.api, "GET", "/kb/chunks")
+        for c in old:
+            call(a.api, "DELETE", f"/kb/chunks/{c['id']}")
+        print(f"Removed {len(old)} old items.")
     saved = post_json(a.api, "POST", "/kb/chunks/bulk", chunks)
     print(f"Saved {len(saved)} items.")
 
