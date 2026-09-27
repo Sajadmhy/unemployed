@@ -75,6 +75,8 @@ def main():
     if job["status"] != "done":
         sys.exit(f"Parsing failed: {job}")
 
+    for err in job.get("errors") or []:
+        print(f"  ! {err}")
     chunks = job["chunks"]
     for i, c in enumerate(chunks, 1):
         print(f"\n[{i}] {c.get('title')} @ {c.get('company') or '-'} ({c.get('date_range') or '-'})")
@@ -82,7 +84,9 @@ def main():
         if c.get("technologies"):
             print(f"    tech: {', '.join(c['technologies'])}")
     if not chunks:
-        sys.exit("Nothing was found in that document.")
+        sys.exit("Nothing was found in that document."
+                 + (" The errors above say why." if job.get("errors") else
+                    " If it is a scanned/image PDF there is no text to read; try a .docx or .txt."))
     if not a.yes and input(f"\nSave these {len(chunks)} items to the knowledge base? [y/N] ").lower() != "y":
         sys.exit("Not saved.")
     saved = post_json(a.api, "POST", "/kb/chunks/bulk", chunks)
