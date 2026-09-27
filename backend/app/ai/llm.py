@@ -15,10 +15,13 @@ We force JSON output so extraction/generation returns something we can parse,
 and use a low temperature because these are extraction tasks, not creative ones.
 """
 import json
+import logging
 
 import httpx
 
 from app.config import settings
+
+log = logging.getLogger(__name__)
 
 # Ollama defaults a model to a few thousand tokens of context whatever the model
 # can actually do, and silently drops what does not fit. Every prompt we send is
@@ -82,7 +85,57 @@ def generate_json(
     call made inside a request the browser is holding open.
     """
     content = _chat(system, prompt, timeout, max_tokens, as_json=True)
-    return json.loads(content)
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # Hitting max_tokens cuts the JSON off mid-string. Everything before the
+        # cut is still good output (on a slow machine, minutes of it), so keep
+        # the complete part rather than throwing the whole answer away.
+        repaired = repair_truncated_json(content)
+        if repaired is None:
+            raise
+        log.warning("LLM JSON was cut off at %d chars; kept the complete part", len(content))
+        return repaired
+
+
+def repair_truncated_json(content: str):
+    """Parse the longest prefix of `content` that ends on a complete value.
+
+    Walks the text once, tracking strings and open brackets; at every point where
+    an object or array element has just closed, that prefix plus the right
+    closing brackets is valid JSON. The last such point wins.
+    """
+    stack: list[str] = []
+    in_str = escaped = False
+    best: tuple[int, str] | None = None
+    for i, ch in enumerate(content):
+        if in_str:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "{[":
+            stack.append("}" if ch == "{" else "]")
+        elif ch in "}]":
+            if not stack:
+                break
+            stack.pop()
+            if stack:
+                best = (i + 1, "".join(reversed(stack)))
+            else:
+                best = (i + 1, "")
+    if best is None:
+        return None
+    end, closers = best
+    try:
+        return json.loads(content[:end] + closers)
+    except json.JSONDecodeError:
+        return None
 
 
 def generate_text(
@@ -142,6 +195,9 @@ def _ollama_chat(
         "keep_alive": KEEP_ALIVE,
         "options": {
             "temperature": 0.1,
+            # Small models at low temperature can fall into repeating the same
+            # bullet until the token cap. A light penalty breaks the loop.
+            "repeat_penalty": 1.1,
             "num_predict": max_tokens,
             "num_ctx": CONTEXT_TOKENS,
         },

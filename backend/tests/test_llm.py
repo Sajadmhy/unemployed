@@ -161,3 +161,24 @@ def test_a_key_is_never_in_a_url(monkeypatch, sent) -> None:
     llm.generate_json("sys", "hello")
     assert "sk-test" not in sent[0]["url"]
     assert "sk-test" not in json.dumps(sent[0]["body"])
+
+
+# ---- truncated JSON (max_tokens hit mid-answer) ------------------------------
+from app.ai.llm import repair_truncated_json  # noqa: E402
+
+
+def test_repair_keeps_complete_bullets():
+    cut = '{"bullets":[{"source_id":1,"text":"Built A"},{"source_id":2,"text":"Built \\"B\\""},{"source_id":3,"text":"Buil'
+    assert repair_truncated_json(cut) == {
+        "bullets": [{"source_id": 1, "text": "Built A"}, {"source_id": 2, "text": 'Built "B"'}]
+    }
+
+
+def test_repair_gives_up_when_nothing_complete():
+    assert repair_truncated_json('{"bullets":[{"source_id":1,"te') is None
+
+
+def test_generate_json_survives_truncation(monkeypatch):
+    from app.ai import llm
+    monkeypatch.setattr(llm, "_chat", lambda *a, **k: '{"bullets":[{"source_id":1,"text":"A"},{"sou')
+    assert llm.generate_json("s", "p") == {"bullets": [{"source_id": 1, "text": "A"}]}

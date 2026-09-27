@@ -174,6 +174,7 @@ def _validate_bullets(raw_bullets, by_id: dict[int, KBChunk]) -> tuple[list[dict
     kept: list[dict] = []
     rejected: list[dict] = []
     used: dict[str, int] = defaultdict(int)
+    cited: set[int] = set()
     if not isinstance(raw_bullets, list):
         return kept, rejected
 
@@ -189,6 +190,11 @@ def _validate_bullets(raw_bullets, by_id: dict[int, KBChunk]) -> tuple[list[dict
         if chunk is None:
             rejected.append({"text": text, "reason": "cites no valid source accomplishment"})
             continue
+        # One accomplishment, one bullet. A model stuck in a loop cites the same
+        # source over and over; the first (strongest-ranked) phrasing stands.
+        if source_id in cited:
+            continue
+        cited.add(source_id)
 
         invented = _invented_numbers(text, chunk)
         if invented:
