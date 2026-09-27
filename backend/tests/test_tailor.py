@@ -21,10 +21,12 @@ def _fake_pipeline(monkeypatch, tmp_path, seen):
 
     monkeypatch.setattr(t, "create_manual_job", fake_job)
     monkeypatch.setattr(t, "generate_resume", fake_resume)
-    monkeypatch.setattr(t, "_guess_title_company", lambda text: {"title": "Backend Dev", "company": "Acme"})
+    monkeypatch.setattr(t, "_guess_title_company",
+                        lambda text: {"title": "Backend Dev", "known_title": "Backend Dev", "company": "Acme"})
 
     from sqlalchemy.orm import Session
     monkeypatch.setattr(Session, "get", lambda self, model, pk: FakeRow() if model is Resume else None)
+    monkeypatch.setattr(Session, "scalar", lambda self, stmt: type("P", (), {"name": "Sajad Mahyaei"})())
 
 
 def test_text_in_pdf_out(monkeypatch, tmp_path):
@@ -34,6 +36,7 @@ def test_text_in_pdf_out(monkeypatch, tmp_path):
     assert r.status_code == 200, r.text
     assert r.headers["content-type"] == "application/pdf"
     assert r.content.startswith(b"%PDF")
+    assert "Sajad%20Mahyaei%20-%20Backend%20Dev.pdf" in r.headers["content-disposition"]
     assert seen["job"].title == "Backend Dev" and seen["job"].company == "Acme"
 
 
@@ -64,3 +67,10 @@ def test_strip_page():
     html = "<html><head><style>a{}</style><script>x()</script></head><body><h1>Dev</h1><p>Do things &amp; stuff</p></body></html>"
     out = t.strip_html(t._DROP_BLOCKS.sub(" ", html))
     assert "x()" not in out and "Dev" in out and "Do things & stuff" in out
+
+
+def test_pdf_filename():
+    assert t.pdf_filename("Sajad Mahyaei", "Full-Stack Engineer (React/Node)") == \
+        "Sajad Mahyaei - Full-Stack Engineer (React Node).pdf"
+    assert t.pdf_filename("Sajad Mahyaei", "") == "Sajad Mahyaei - Software Engineer.pdf"
+    assert t.pdf_filename("", "Dev") == "Resume - Dev.pdf"

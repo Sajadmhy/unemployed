@@ -17,13 +17,14 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.ai.llm import generate_json
 from app.api.jobs import create_manual_job
 from app.api.resumes import generate_resume
 from app.connectors.base import HEADERS, strip_html
-from app.db.models import Resume
+from app.db.models import CandidateProfile, Resume
 from app.db.session import get_db
 from app.schemas import ManualJobIn
 
@@ -63,8 +64,12 @@ def tailor(data: TailorIn, db: Session = Depends(get_db)) -> FileResponse:
     text = text[:_MAX_CHARS]
 
     title, company = data.title.strip(), data.company.strip()
+    # The title as the posting states it (given, or read by the model); empty when
+    # neither worked, and the file is then named for the default role.
+    known_title = title
     if not title or not company:
         guess = _guess_title_company(text)
+        known_title = known_title or guess["known_title"]
         title = title or guess["title"]
         company = company or guess["company"]
 
@@ -84,11 +89,11 @@ def tailor(data: TailorIn, db: Session = Depends(get_db)) -> FileResponse:
     if row is None or not row.pdf_path:
         raise HTTPException(500, "Resume was generated but the PDF is missing.")
 
-    safe = re.sub(r"[^A-Za-z0-9]+", "_", f"{company}_{title}").strip("_")[:60] or "resume"
+    profile = db.scalar(select(CandidateProfile))
     return FileResponse(
         row.pdf_path,
         media_type="application/pdf",
-        filename=f"resume_{safe}.pdf",
+        filename=pdf_filename(profile.name if profile else "", known_title),
         headers={"X-Job-Title": _ascii(title), "X-Company": _ascii(company),
                  "X-Match-Score": str(job.get("score", ""))},
     )
@@ -127,10 +132,28 @@ def _guess_title_company(text: str) -> dict:
         raw = {}
     title = str(raw.get("title") or "").strip()[:120]
     company = str(raw.get("company") or "").strip()[:120]
-    if len(title) < 2:
-        first = next((ln.strip() for ln in text.splitlines() if len(ln.strip()) >= 2), "Software Developer")
+    known = title if len(title) >= 2 else ""
+    if not known:
+        first = next((ln.strip() for ln in text.splitlines() if len(ln.strip()) >= 2), DEFAULT_ROLE)
         title = first[:80]
-    return {"title": title, "company": company or "Unknown company"}
+    return {"title": title, "known_title": known, "company": company or "Unknown company"}
+
+
+DEFAULT_ROLE = "Software Engineer"
+
+
+def pdf_filename(name: str, job_title: str) -> str:
+    """"Sajad Mahyaei - Full-Stack Engineer.pdf" — what a recruiter sees in their inbox.
+
+    The job's own title when the posting gives one, "Software Engineer" when it
+    does not. Characters no filesystem accepts are dropped.
+    """
+    def clean(s: str) -> str:
+        return re.sub(r"\s+", " ", re.sub(r'[\\/:*?"<>|\x00-\x1f]', " ", s)).strip(" .-")
+
+    person = clean(name) or "Resume"
+    role = clean(job_title)[:80] or DEFAULT_ROLE
+    return f"{person} - {role}.pdf"
 
 
 def _ascii(s: str) -> str:
