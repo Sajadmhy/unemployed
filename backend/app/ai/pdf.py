@@ -13,6 +13,7 @@ Everything here is a deliberate parseability choice, not a style choice:
 The layout is fixed and code-owned — the LLM writes words, never markup, so a bad
 generation can never produce an unparseable document.
 """
+import re
 import unicodedata
 from pathlib import Path
 
@@ -122,7 +123,19 @@ def _bullets(pdf: FPDF, items: list[dict]) -> None:
         )
         grouped.setdefault(key, []).append(item)
 
-    for (title, company, dates), group in grouped.items():
+    # Newest first, as every resume reader expects. Bullets arrive in relevance
+    # order, which put a four-month 2022 job above the one that followed it.
+    # Entries without a readable date keep their relevance order, after the rest.
+    order = list(grouped)
+    order.sort(key=lambda k: _recency(k[2]) or (0, 0, 0, 0), reverse=True)
+
+    for key in order:
+        title, company, dates = key
+        group = grouped[key]
+        # "Full-Stack Developer Paiger" + "Paiger | 2023": the parser sometimes
+        # leaves the employer on the end of the title. Print it once.
+        if company and title.lower().endswith(company.lower()) and len(title) > len(company):
+            title = title[: -len(company)].rstrip(" ,-|@").removesuffix(" at").strip() or title
         # An untitled chunk used to print an empty bold line with an orphaned
         # indent under it. Falling through to the employer, then to nothing,
         # keeps the bullets attached to whatever context there is.
@@ -144,6 +157,27 @@ def _bullets(pdf: FPDF, items: list[dict]) -> None:
                 0, LINE, _safe(f"- {item['text']}"), new_x="LMARGIN", new_y="NEXT"
             )
         pdf.ln(0.5)
+
+
+_MONTHS = {m: i for i, m in enumerate(
+    ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
+_PRESENT = re.compile(r"\b(present|current|now|today|ongoing)\b", re.I)
+_DATE = re.compile(r"(?:\b([A-Za-z]{3})[a-z]*\.?\s+)?\b((?:19|20)\d{2})\b|\b(\d{1,2})/((?:19|20)\d{2})\b")
+
+
+def _recency(dates: str) -> tuple[int, int, int, int] | None:
+    """(end year, end month, start year, start month) for sorting; None if undated."""
+    points = []
+    for mon, year, num_mon, num_year in _DATE.findall(dates or ""):
+        if year:
+            points.append((int(year), _MONTHS.get(mon[:3].lower(), 0) if mon else 0))
+        else:
+            points.append((int(num_year), int(num_mon)))
+    if not points:
+        return None
+    start = points[0]
+    end = (9999, 12) if _PRESENT.search(dates) else points[-1]
+    return (*end, *start)
 
 
 # The punctuation a word processor substitutes while you type, which is most of

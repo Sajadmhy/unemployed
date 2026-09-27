@@ -121,3 +121,38 @@ def test_multiword_skill_matches_across_a_line_wrap() -> None:
     }
     report = keyword_coverage(resume, {"required_skills": ["GitHub / Jira / Slack APIs"]})
     assert report["required_missing"] == []
+
+
+# ---- entry order and headings in the PDF ------------------------------------
+import pdfplumber  # noqa: E402
+
+from app.ai import pdf as _pdf  # noqa: E402
+
+
+def test_recency_parses_common_formats():
+    assert _pdf._recency("Feb 2023 - Present") == (9999, 12, 2023, 2)
+    assert _pdf._recency("Jul 2022 – Nov 2022") == (2022, 11, 2022, 7)
+    assert _pdf._recency("2019-2021") == (2021, 0, 2019, 0)
+    assert _pdf._recency("03/2020 - 05/2021") == (2021, 5, 2020, 3)
+    assert _pdf._recency("") is None
+
+
+def test_experience_prints_newest_first_and_employer_once(tmp_path):
+    class P:
+        name, email, phone, location, links, education = "A", "a@b.c", "", "", {}, ""
+
+    def b(title, company, dates, text):
+        return {"text": text, "section": "Experience", "title": title,
+                "company": company, "date_range": dates}
+
+    resume = {"skills": [], "bullets": [  # relevance order, as the model returns it
+        b("Full-Stack Developer Paiger", "Paiger", "Feb 2023 - Present", "Built workflows"),
+        b("Front-End Developer", "Lolo Co", "Jul 2022 - Nov 2022", "Built site"),
+        b("Front-End Developer", "Classeh", "Nov 2022 - Feb 2023", "Worked with team"),
+        b("Apprentice", "100 Devs", "May 2022 - Jul 2022", "Contributed"),
+    ]}
+    out = _pdf.render(P(), resume, tmp_path / "r.pdf")
+    text = pdfplumber.open(out).pages[0].extract_text()
+    positions = [text.index(c) for c in ("Paiger |", "Classeh", "Lolo Co", "100 Devs")]
+    assert positions == sorted(positions)
+    assert "Full-Stack Developer Paiger" not in text and "Full-Stack Developer" in text
