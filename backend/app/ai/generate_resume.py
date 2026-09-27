@@ -197,6 +197,10 @@ def _validate_bullets(raw_bullets, by_id: dict[int, KBChunk]) -> tuple[list[dict
         if chunk is None:
             rejected.append({"text": text, "reason": "cites no valid source accomplishment"})
             continue
+        # A skills-list line is evidence for the Skills section, not a bullet:
+        # it has no section of its own and would otherwise print under Projects.
+        if (chunk.type or "").lower() == "skill":
+            continue
         # One accomplishment, one bullet. A model stuck in a loop cites the same
         # source over and over; the first (strongest-ranked) phrasing stands.
         if source_id in cited:

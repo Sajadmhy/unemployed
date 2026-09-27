@@ -167,3 +167,15 @@ def test_skills_listed_once_across_js_suffix():
     assert _skill_key("React") == _skill_key("React.js") == _skill_key("ReactJS".replace("JS", ".js"))
     assert _skill_key("Node.js") == _skill_key("node")
     assert _skill_key("C#") != _skill_key("C++")
+
+
+def test_skill_lines_never_become_bullets():
+    from types import SimpleNamespace
+    from app.ai.generate_resume import _validate_bullets
+    skill = SimpleNamespace(id=1, type="skill", title="Frontend", accomplishment="React, Next.js",
+                            impact=None, technologies=["React"], context=None, company=None, date_range=None)
+    job = SimpleNamespace(id=2, type="experience", title="Dev", accomplishment="Built X with React",
+                          impact=None, technologies=["React"], context=None, company="Acme", date_range="2023")
+    kept, _ = _validate_bullets([{"source_id": 1, "text": "Skilled in React"},
+                                 {"source_id": 2, "text": "Built X with React"}], {1: skill, 2: job})
+    assert [b["text"] for b in kept] == ["Built X with React"]
