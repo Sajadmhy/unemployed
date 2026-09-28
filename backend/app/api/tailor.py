@@ -10,6 +10,7 @@ no screens, so this chains them:
 It is slow on purpose-built hardware and slower on a Pi — two LLM calls, a
 few minutes on a CPU — so clients should allow a long timeout.
 """
+import html
 import logging
 import re
 
@@ -23,7 +24,6 @@ from sqlalchemy.orm import Session
 from app.ai.llm import generate_json
 from app.api.jobs import create_manual_job
 from app.api.resumes import generate_resume
-from app.connectors.base import HEADERS, strip_html
 from app.db.models import CandidateProfile, Resume
 from app.db.session import get_db
 from app.schemas import ManualJobIn
@@ -39,6 +39,9 @@ _URL_RE = re.compile(r"https?://[^\s<>\"')\]]+")
 # a cookie banner.
 _UNREADABLE = ("linkedin.com", "t.me", "telegram.me", "indeed.com", "glassdoor.")
 _DROP_BLOCKS = re.compile(r"<(script|style|noscript|svg|nav|footer|header)\b.*?</\1>", re.S | re.I)
+_TAG_RE = re.compile(r"<[^>]+>")
+_WS_RE = re.compile(r"\n{3,}")
+HEADERS = {"User-Agent": "unemployed/1.0 (+https://github.com/Sajadmhy/unemployed) resume tailoring"}
 
 
 class TailorIn(BaseModel):
@@ -79,7 +82,7 @@ def tailor(data: TailorIn, db: Session = Depends(get_db)) -> FileResponse:
             ManualJobIn(title=title, company=company, description=text, apply_url=url), db
         )
         step = "writing the resume"
-        resume = generate_resume(job["job_id"], "pdf", db)
+        resume = generate_resume(job["job_id"], db)
     except HTTPException:
         raise
     except Exception as e:  # noqa: BLE001 - a bot can only show what we tell it
@@ -94,8 +97,7 @@ def tailor(data: TailorIn, db: Session = Depends(get_db)) -> FileResponse:
         row.pdf_path,
         media_type="application/pdf",
         filename=pdf_filename(profile.name if profile else "", known_title),
-        headers={"X-Job-Title": _ascii(title), "X-Company": _ascii(company),
-                 "X-Match-Score": str(job.get("score", ""))},
+        headers={"X-Job-Title": _ascii(title), "X-Company": _ascii(company)},
     )
 
 
@@ -117,6 +119,15 @@ def _fetch(url: str) -> str:
             422, "That page has almost no text (it probably needs JavaScript). Paste the job text instead."
         )
     return body
+
+
+def strip_html(raw: str) -> str:
+    """Plain text from an HTML page, for the LLM."""
+    text = html.unescape(raw or "")
+    text = _TAG_RE.sub(" ", text)
+    text = html.unescape(text)  # entities can survive one pass (&amp;lt;)
+    text = "\n".join(line.strip() for line in text.splitlines())
+    return _WS_RE.sub("\n\n", text).strip()
 
 
 _GUESS_SYSTEM = """You read a job posting and return JSON: {"title": ..., "company": ...}.

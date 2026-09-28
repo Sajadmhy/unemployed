@@ -7,7 +7,7 @@ Two subtleties that matter for retrieval quality with bge-small-en-v1.5:
    measurably improves retrieval. So we expose embed_query vs embed_passage.
 2. Normalisation: we L2-normalise vectors so cosine similarity behaves cleanly —
    for unit vectors it is just a dot product, which is what makes the ranking in
-   `app.ai.vectors` and the scoring in `app.ai.match` a single matrix multiply.
+   `app.ai.vectors` a single matrix multiply.
 
 The model (~130 MB) downloads once on first use and is cached on disk.
 """

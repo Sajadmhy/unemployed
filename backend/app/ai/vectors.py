@@ -7,9 +7,6 @@ rows, not millions. The original schema said as much, declining to build a
 vector index because "with a personal KB (tens of chunks) an exact scan is
 fine". An exact scan is exactly what this is; it just happens in numpy now.
 
-The scoring engine (`app.ai.match`) already worked this way for the same
-reason, so this is one shared implementation rather than a second one.
-
 Every vector the app stores is L2-normalised at write time by
 `app.ai.embeddings`, which is what lets similarity be a plain dot product.
 """

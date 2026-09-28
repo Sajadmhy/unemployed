@@ -9,12 +9,6 @@ venv/
 # Env / secrets
 .env
 
-# Node / Next.js
-node_modules/
-.next/
-out/
-npm-debug.log*
-
 # Model / HF cache (large)
 .cache/
 .huggingface/
@@ -37,18 +31,5 @@ backend/generated/
 *.pdf
 !resources/**/*.pdf
 
-# What run.ps1 printed on the last run. Useful to send to somebody, never to
-# commit: it names paths on one particular machine.
-setup-log.txt
-
 # Machine-local Claude Code settings
 .claude/settings.local.json
-
-# Landing app
-landing/.next/
-landing/node_modules/
-landing/.env.local
-landing/.vercel/
-
-# Installer build output (built by installer/build-exe.ps1 / the release workflow)
-installer/dist/

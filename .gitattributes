@@ -4,8 +4,5 @@
 # rather than a line-ending setting.
 *.sh text eol=lf
 
-# The reverse for PowerShell, which is only ever run on Windows.
-*.ps1 text eol=crlf
-
 # Let git decide for everything else.
 * text=auto

@@ -12,7 +12,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND="$ROOT/backend"
-WEB="$ROOT/web"
 VENV="$BACKEND/.venv/bin/python"
 
 # Which model this machine can actually hold.
@@ -138,22 +137,20 @@ ensure() {
 # --- 1. Prerequisites -------------------------------------------------------
 say "Checking prerequisites"
 if [ "$(uname)" = "Darwin" ]; then
-  HINT_NODE="brew install node"; HINT_PY="brew install python@3.12"
+  HINT_PY="brew install python@3.12"
   HINT_OLLAMA="brew install ollama"
 
   # The formula, not the cask. It gives a plain CLI with no .app to launch,
   # which is what the `ollama serve` handling below already expects.
-  ensure node node "Node.js" "$HINT_NODE"
   ensure python3 python@3.12 "Python" "$HINT_PY"
   ensure ollama ollama "Ollama" "$HINT_OLLAMA"
 else
   # Linux keeps naming what is missing rather than installing it. The install
   # routes here vary by distribution and every one of them wants sudo, which is
   # a much bigger thing to do unasked than a per user Homebrew.
-  HINT_NODE="sudo apt install nodejs npm"; HINT_PY="sudo apt install python3 python3-venv"
+  HINT_PY="sudo apt install python3 python3-venv"
   HINT_OLLAMA="curl -fsSL https://ollama.com/install.sh | sh"
 
-  need node "Node.js" "$HINT_NODE"
   need python3 "Python" "$HINT_PY"
   need ollama "Ollama" "$HINT_OLLAMA"
 fi
@@ -163,7 +160,7 @@ fi
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)' \
   || die "Python 3.10 or newer is required (found $(python3 --version)).
   $HINT_PY"
-ok "node, python and ollama all present"
+ok "python and ollama both present"
 
 # --- 2. Model ---------------------------------------------------------------
 say "Checking the language model"
@@ -241,24 +238,13 @@ ok "Applying database migrations..."
 (cd "$BACKEND" && "$VENV" -m alembic upgrade head)
 ok "Backend ready"
 
-# --- 4. Frontend ------------------------------------------------------------
-say "Preparing the frontend"
-# Every time, not only when node_modules is missing. That folder existing means
-# *an* install happened once, not that it matches the package.json that just
-# arrived with a pull - so the version that added a dependency reached everyone
-# who already had the app as a missing-module stack trace on startup, which is
-# the worst possible first impression of an upgrade. npm answers "up to date"
-# in about a second when nothing has changed, and that second is worth it.
-(cd "$WEB" && npm install --no-audit --no-fund)
-ok "Frontend ready"
-
-# --- 5. Start ---------------------------------------------------------------
+# --- 4. Start ---------------------------------------------------------------
 say "Starting the app"
 
 # Starting a second copy on a taken port dies on arrival, and the health check
 # below would still pass against the *old* one - success that is really someone
 # else's process. Refuse instead.
-for port in 8000 3000; do
+for port in 8000; do
   if curl -sf -m 2 "http://localhost:$port" >/dev/null 2>&1 \
      || curl -sf -m 2 "http://localhost:$port/health" >/dev/null 2>&1; then
     die "Port $port is already in use.
@@ -269,11 +255,9 @@ done
 
 (cd "$BACKEND" && "$VENV" -m uvicorn app.main:app --reload --port 8000) &
 BACK_PID=$!
-(cd "$WEB" && npm run dev) &
-WEB_PID=$!
 
 # Ctrl+C should take the whole app down, not orphan half of it.
-trap 'kill $BACK_PID $WEB_PID 2>/dev/null || true' INT TERM EXIT
+trap 'kill $BACK_PID 2>/dev/null || true' INT TERM EXIT
 
 waited=0
 until curl -sf http://localhost:8000/health >/dev/null 2>&1; do
@@ -281,6 +265,6 @@ until curl -sf http://localhost:8000/health >/dev/null 2>&1; do
   [ "$waited" -ge 120 ] && die "The backend did not come up. Check the output above."
 done
 
-printf "\n  The app is running at http://localhost:3000\n"
+printf "\n  The backend is running at http://localhost:8000 (POST /tailor)\n"
 printf "  Press Ctrl+C to stop. Next time, just run this script again.\n\n"
 wait

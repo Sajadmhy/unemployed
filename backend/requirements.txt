@@ -20,11 +20,6 @@ pydantic-settings>=2.7.1
 SQLAlchemy>=2.0.36,<3
 alembic>=1.14.0
 
-# Only used by `python -m app.db.migrate_from_postgres`, the one-time import for
-# people who ran the Postgres version of this app. Nothing else touches it, and
-# a fresh install never runs it.
-psycopg[binary]>=3.2.3,<4
-
 # Embeddings (bge-small-en-v1.5). Pulls torch — this is the heavy install.
 sentence-transformers>=3.3.1
 
