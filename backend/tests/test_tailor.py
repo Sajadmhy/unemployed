@@ -13,7 +13,7 @@ def _fake_pipeline(monkeypatch, tmp_path, seen):
         seen["job"] = data
         return {"job_id": 1, "score": 0.5, "filtered": False}
 
-    def fake_resume(job_id, fmt, db):
+    def fake_resume(job_id, db):
         return {"id": 7}
 
     class FakeRow:

@@ -110,8 +110,10 @@ def test_one_section_cannot_consume_the_whole_resume() -> None:
     assert PROJECTS in sections
     assert EDUCATION in sections
 
+    # Experience is budgeted per job when the resume is assembled (see
+    # test_experience_jobs.py), so validation no longer cuts it.
     experience = [b for b in kept if b["section"] == EXPERIENCE]
-    assert len(experience) == quota_for(EXPERIENCE)
+    assert len(experience) == 20
 
 
 def test_a_section_keeps_its_strongest_bullets() -> None:

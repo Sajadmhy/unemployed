@@ -19,7 +19,7 @@ from pathlib import Path
 
 from fpdf import FPDF
 
-from app.ai.sections import EDUCATION, ORDER
+from app.ai.sections import EDUCATION, ORDER, recency as _recency
 
 PAGE_MARGIN = 14
 LINE = 4.6
@@ -42,7 +42,7 @@ def render(profile, resume: dict, out_path: Path) -> Path:
 
     _header(pdf, profile)
     if resume.get("summary"):
-        _section(pdf, "Summary")
+        _section(pdf, "Profile")
         _body(pdf, resume["summary"])
     if resume.get("skills"):
         _section(pdf, "Skills")
@@ -157,27 +157,6 @@ def _bullets(pdf: FPDF, items: list[dict]) -> None:
                 0, LINE, _safe(f"- {item['text']}"), new_x="LMARGIN", new_y="NEXT"
             )
         pdf.ln(0.5)
-
-
-_MONTHS = {m: i for i, m in enumerate(
-    ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
-_PRESENT = re.compile(r"\b(present|current|now|today|ongoing)\b", re.I)
-_DATE = re.compile(r"(?:\b([A-Za-z]{3})[a-z]*\.?\s+)?\b((?:19|20)\d{2})\b|\b(\d{1,2})/((?:19|20)\d{2})\b")
-
-
-def _recency(dates: str) -> tuple[int, int, int, int] | None:
-    """(end year, end month, start year, start month) for sorting; None if undated."""
-    points = []
-    for mon, year, num_mon, num_year in _DATE.findall(dates or ""):
-        if year:
-            points.append((int(year), _MONTHS.get(mon[:3].lower(), 0) if mon else 0))
-        else:
-            points.append((int(num_year), int(num_mon)))
-    if not points:
-        return None
-    start = points[0]
-    end = (9999, 12) if _PRESENT.search(dates) else points[-1]
-    return (*end, *start)
 
 
 # The punctuation a word processor substitutes while you type, which is most of

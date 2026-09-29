@@ -13,6 +13,8 @@ know, then where you studied. Parsers look for these exact words, which is the
 other reason the list is fixed in code rather than written by a model.
 """
 
+import re
+
 EXPERIENCE = "Experience"
 PROJECTS = "Projects"
 ACHIEVEMENTS = "Achievements"
@@ -51,6 +53,15 @@ QUOTAS: dict[str, int] = {
     EDUCATION: 4,
 }
 
+# Experience is budgeted per job, not per section, because every job the
+# candidate has held must appear: a job whose bullets do not match the posting is
+# still a job. Newest first, so the current role gets the most room.
+JOB_BULLET_CAPS: tuple[int, ...] = (9, 4, 3)
+JOB_BULLET_CAP_DEFAULT = 2
+# Keeps the page to about one sheet however long the career is; older jobs give
+# up bullets first, and none goes below one.
+EXPERIENCE_MAX = 16
+
 # The most bullets any one resume can carry. A backstop for the pathological
 # case where every section fills its quota on a one page document.
 MAX_TOTAL = 20
@@ -68,3 +79,24 @@ def section_for(chunk_type: str | None) -> str:
 
 def quota_for(section: str) -> int:
     return QUOTAS.get(section, 4)
+
+
+_MONTHS = {m: i for i, m in enumerate(
+    ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
+_PRESENT = re.compile(r"\b(present|current|now|today|ongoing)\b", re.I)
+_DATE = re.compile(r"(?:\b([A-Za-z]{3})[a-z]*\.?\s+)?\b((?:19|20)\d{2})\b|\b(\d{1,2})/((?:19|20)\d{2})\b")
+
+
+def recency(dates: str) -> tuple[int, int, int, int] | None:
+    """(end year, end month, start year, start month) for sorting; None if undated."""
+    points = []
+    for mon, year, num_mon, num_year in _DATE.findall(dates or ""):
+        if year:
+            points.append((int(year), _MONTHS.get(mon[:3].lower(), 0) if mon else 0))
+        else:
+            points.append((int(num_year), int(num_mon)))
+    if not points:
+        return None
+    start = points[0]
+    end = (9999, 12) if _PRESENT.search(dates) else points[-1]
+    return (*end, *start)
